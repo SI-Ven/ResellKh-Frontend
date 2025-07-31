@@ -5,14 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
 import Input from "@/components/ui/Input";
 
-// Loading component for Suspense
 const LoadingFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-white">
     <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-orange-500"></div>
   </div>
 );
 
-// Main component content that uses useSearchParams
 function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -176,7 +174,6 @@ function ResetPasswordContent() {
   );
 }
 
-// Main component with Suspense wrapper
 export default function ResetPassword() {
   return (
     <Suspense fallback={<LoadingFallback />}>
