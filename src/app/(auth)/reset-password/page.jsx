@@ -1,14 +1,22 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
 import Input from "@/components/ui/Input";
 
-export default function ResetPassword() {
+// Loading component for Suspense
+const LoadingFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-white">
+    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-orange-500"></div>
+  </div>
+);
+
+// Main component content that uses useSearchParams
+function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const email = searchParams.get("email");
+  const email = searchParams?.get("email");
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -48,17 +56,20 @@ export default function ResetPassword() {
     setLoading(true);
 
     try {
-      const response = await fetch("https://trivia-worlds-wichita-stan.trycloudflare.com/api/v1/auths/reset-new-password", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          email,
-          newPassword: password,
-          confirmPassword: confirm
-        }),
-      });
+      const response = await fetch(
+        "https://trivia-worlds-wichita-stan.trycloudflare.com/api/v1/auths/reset-new-password",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            newPassword: password,
+            confirmPassword: confirm,
+          }),
+        }
+      );
 
       const text = await response.text();
       console.log("Server Response:", text);
@@ -72,7 +83,6 @@ export default function ResetPassword() {
       setTimeout(() => {
         router.push("/login");
       }, 2000);
-
     } catch (err) {
       console.error("Error resetting password:", err);
       setError(err.message || "Something went wrong.");
@@ -87,7 +97,11 @@ export default function ResetPassword() {
     <div className="min-h-screen flex flex-col md:flex-row items-center justify-center bg-white px-[150px]">
       {/* Left Image */}
       <div className="hidden md:flex w-1/2 justify-between ">
-        <img src="/images/auth/create new password.jpg" alt="Reset Password" className="w-[400px]" />
+        <img
+          src="/images/auth/create new password.jpg"
+          alt="Reset Password"
+          className="w-[400px]"
+        />
       </div>
 
       {/* Right Form */}
@@ -96,9 +110,12 @@ export default function ResetPassword() {
           <img src="/images/auth/logo.jpg" alt="logo" className="w-[130px]" />
         </div>
         <div>
-          <h2 className="text-xl font-semibold text-left">Create new Password</h2>
+          <h2 className="text-xl font-semibold text-left">
+            Create new Password
+          </h2>
           <p className="text-gray-500 mt-2 text-left text-sm">
-            Set the new password for your account so you can login and access all features.
+            Set the new password for your account so you can login and access
+            all features.
           </p>
         </div>
 
@@ -156,5 +173,14 @@ export default function ResetPassword() {
         {message && <p className="text-green-500 text-sm mt-2">{message}</p>}
       </div>
     </div>
+  );
+}
+
+// Main component with Suspense wrapper
+export default function ResetPassword() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }

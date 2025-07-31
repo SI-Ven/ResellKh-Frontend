@@ -1,28 +1,59 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useCallback } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import Cart from '@/components/profile/someComponent/Cart';
-import { searchProductsByImage } from '@/components/services/ScanProduct.service';
-import ProductCart from '@/components/domain/ProductCart';
+import { useEffect, useState, useCallback, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import Cart from "@/components/profile/someComponent/Cart";
+import { searchProductsByImage } from "@/components/services/ScanProduct.service";
+import ProductCart from "@/components/domain/ProductCart";
 
 // SVG Icons
 const MagnifyingGlassIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={1.5}
+    stroke="currentColor"
+    className="w-6 h-6"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+    />
   </svg>
 );
 
 const ArrowPathIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={1.5}
+    stroke="currentColor"
+    className="w-6 h-6"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"
+    />
   </svg>
 );
 
-export default function ResultScanPage() {
+// Loading component for Suspense
+const LoadingFallback = () => (
+  <div className="flex flex-col items-center justify-center py-16">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ea580c] mb-4"></div>
+    <p>Loading...</p>
+  </div>
+);
+
+// Main component content
+function ResultScanContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const imgSrc = searchParams.get('imgSrc');
+  const imgSrc = searchParams?.get("imgSrc") || null;
   const [scanResults, setScanResults] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -43,35 +74,41 @@ export default function ResultScanPage() {
       }
 
       const blob = await response.blob();
-      const file = new File([blob], 'search-image.jpg', { type: blob.type });
+      const file = new File([blob], "search-image.jpg", { type: blob.type });
 
       const result = await searchProductsByImage(file);
 
-      if (result.payload?.length > 0) {
+      if (
+        result?.payload &&
+        Array.isArray(result.payload) &&
+        result.payload.length > 0
+      ) {
         const formattedResults = result.payload.map((product, index) => ({
-          id: product.productId || index,
-          title: product.productName,
-          description: product.description,
-          productPrice: product.productPrice,
-          discountPercent: product.discountPercent,
-          imageUrl: product.fileUrls?.[0] || '/images/placeholder-product.jpg',
-          condition: product.condition,
-          location: product.location,
+          id: product?.productId || `product-${index}`,
+          title: product?.productName || "Unknown Product",
+          description: product?.description || "",
+          productPrice: product?.productPrice || 0,
+          discountPercent: product?.discountPercent || 0,
+          imageUrl: product?.fileUrls?.[0] || "/images/placeholder-product.jpg",
+          condition: product?.condition || "",
+          location: product?.location || "",
         }));
         setScanResults(formattedResults);
       } else {
         setError({
           title: "No matches found",
-          message: "We couldn't find similar products. Try with a different image or check back later.",
-          icon: <MagnifyingGlassIcon />
+          message:
+            "We couldn't find similar products. Try with a different image or check back later.",
+          icon: <MagnifyingGlassIcon />,
         });
         setScanResults([]);
       }
     } catch (err) {
+      console.error("Search error:", err);
       setError({
         title: "Search failed",
-        message: err.message || "Something went wrong. Please try again.",
-        icon: <ArrowPathIcon />
+        message: err?.message || "Something went wrong. Please try again.",
+        icon: <ArrowPathIcon />,
       });
       setScanResults([]);
     } finally {
@@ -80,7 +117,9 @@ export default function ResultScanPage() {
   }, [imgSrc]);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    if (typeof window !== "undefined") {
+      window.scrollTo(0, 0);
+    }
     fetchSimilarProducts();
   }, [fetchSimilarProducts]);
 
@@ -97,7 +136,8 @@ export default function ResultScanPage() {
         {error?.title || "No similar products found"}
       </h2>
       <p className="text-gray-600 max-w-md mb-6">
-        {error?.message || "We couldn't find any matching products. Try with a different image."}
+        {error?.message ||
+          "We couldn't find any matching products. Try with a different image."}
       </p>
       <div className="flex gap-4">
         <button
@@ -166,9 +206,14 @@ export default function ResultScanPage() {
                 imageUrl={item.imageUrl}
                 title={item.title}
                 description={item.description}
-                price={(item.productPrice * (100 - (item.discountPercent || 0)) / 100).toFixed(2)}
+                price={(
+                  (item.productPrice * (100 - (item.discountPercent || 0))) /
+                  100
+                ).toFixed(2)}
                 originalPrice={item.discountPercent ? item.productPrice : null}
-                discountText={item.discountPercent ? `${item.discountPercent}% OFF` : null}
+                discountText={
+                  item.discountPercent ? `${item.discountPercent}% OFF` : null
+                }
               />
             ))}
           </div>
@@ -177,5 +222,14 @@ export default function ResultScanPage() {
         <EmptyState error={error} />
       )}
     </div>
+  );
+}
+
+// Main component with Suspense wrapper
+export default function ResultScanPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <ResultScanContent />
+    </Suspense>
   );
 }
